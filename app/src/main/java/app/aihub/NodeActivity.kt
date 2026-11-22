@@ -21,43 +21,20 @@ class NodeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         discovery = NodeDiscovery(this)
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
-        }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 20, 20, 20) }
+        root.addView(TextView(this).apply { text = "节点发现与筛选"; textSize = 24f })
         root.addView(TextView(this).apply {
-            text = "节点发现与筛选"
-            textSize = 24f
+            text = "添加你信任的 HTTPS 订阅地址。支持解析 VLESS、VMess、Trojan、Shadowsocks、Hysteria2 等分享链接。"
+            textSize = 14f; setPadding(0, 8, 0, 12)
         })
-        root.addView(TextView(this).apply {
-            text = "添加你信任的 HTTPS 订阅地址。扫描会解析 VLESS、VMess、Trojan、Shadowsocks、Hysteria2 等分享链接。"
-            textSize = 14f
-            setPadding(0, 8, 0, 12)
-        })
-        sourceInput = EditText(this).apply {
-            hint = "https://example.com/subscription"
-            singleLine = true
-        }
+        sourceInput = EditText(this).apply { hint = "https://example.com/subscription"; singleLine = true }
         root.addView(sourceInput)
-        root.addView(Button(this).apply {
-            text = "保存并扫描订阅"
-            setOnClickListener { addAndScan() }
-        })
-        root.addView(Button(this).apply {
-            text = "重新扫描全部来源"
-            setOnClickListener { scanAll() }
-        })
-        root.addView(Button(this).apply {
-            text = "测试节点服务器端口"
-            setOnClickListener { probe() }
-        })
-        status = TextView(this).apply { text = "尚未扫描来源。" }
+        root.addView(Button(this).apply { text = "保存并扫描订阅"; setOnClickListener { addAndScan() } })
+        root.addView(Button(this).apply { text = "重新扫描全部来源"; setOnClickListener { scanAll() } })
+        root.addView(Button(this).apply { text = "测试节点服务器端口"; setOnClickListener { probe() } })
+        status = TextView(this).apply { text = "来源与节点尚未扫描。" }
         root.addView(status)
-        root.addView(TextView(this).apply {
-            text = "节点列表"
-            textSize = 18f
-            setPadding(0, 16, 0, 8)
-        })
+        root.addView(TextView(this).apply { text = "订阅来源"; textSize = 18f; setPadding(0, 16, 0, 8) })
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(list)
         setContentView(ScrollView(this).apply { addView(root) })
@@ -79,7 +56,7 @@ class NodeActivity : AppCompatActivity() {
         val all = discovery.sources()
         if (all.isEmpty()) { status.text = "请先添加一个 HTTPS 订阅来源。"; return }
         nodes.clear()
-        list.removeAllViews()
+        renderNodes()
         all.forEach { scan(it) }
     }
 
@@ -108,35 +85,47 @@ class NodeActivity : AppCompatActivity() {
                 nodes.clear()
                 nodes.addAll(results.sortedWith(compareByDescending<ProxyNode> { it.endpointReachable == true }
                     .thenBy { it.endpointLatencyMs ?: Long.MAX_VALUE }))
-                status.text = "端口探测完成：${nodes.count { it.endpointReachable == true }}/${nodes.size} 个服务器端口可连接。"
+                status.text = "端口探测完成：${nodes.count { it.endpointReachable == true }}/${nodes.size} 个端口可连接。"
                 renderNodes()
             }
         }
     }
 
     private fun renderSources() {
+        list.removeAllViews()
         discovery.sources().forEach { source ->
-            list.addView(TextView(this).apply {
-                text = "来源：$source"
-                textSize = 12f
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            row.addView(TextView(this).apply {
+                text = source; textSize = 12f
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(Button(this).apply {
+                text = "移除"
+                setOnClickListener {
+                    discovery.removeSource(source)
+                    nodes.removeAll { it.source == source }
+                    renderNodes()
+                }
             })
+            list.addView(row)
         }
+        list.addView(TextView(this).apply { text = "节点列表"; textSize = 18f; setPadding(0, 16, 0, 8) })
+        nodes.forEach { addNodeRow(it) }
     }
 
     private fun renderNodes() {
-        list.removeAllViews()
-        nodes.forEach { node ->
-            val result = when (node.endpointReachable) {
-                true -> "端口可连接 · ${node.endpointLatencyMs} ms"
-                false -> "端口不可连接"
-                null -> "尚未测试"
-            }
-            list.addView(TextView(this).apply {
-                text = "${node.name}\n${node.summary()}\n$result\n来源：${node.source}"
-                textSize = 14f
-                setPadding(12, 12, 12, 12)
-            }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        renderSources()
+    }
+
+    private fun addNodeRow(node: ProxyNode) {
+        val result = when (node.endpointReachable) {
+            true -> "TCP 端口可连接 · ${node.endpointLatencyMs} ms"
+            false -> "TCP 端口不可连接"
+            null -> "尚未测试"
         }
+        list.addView(TextView(this).apply {
+            text = "${node.name}\n${node.summary()}\n$result\n来源：${node.source}"
+            textSize = 14f; setPadding(12, 12, 12, 12)
+        }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
 
     override fun onDestroy() {
