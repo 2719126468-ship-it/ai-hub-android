@@ -31,6 +31,46 @@ class NodeDiscovery(context: Context) {
         secrets.write("sources_json", org.json.JSONArray(sources().filterNot { it == value }).toString())
     }
 
+    fun searchPublicSources(): List<String> {
+        val api = URL("https://api.github.com/search/repositories?q=free+v2ray+subscription+in%3Aname%2Cdescription%2Creadme&sort=updated&per_page=15")
+        val connection = (api.openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10000
+            readTimeout = 15000
+            setRequestProperty("Accept", "application/vnd.github+json")
+            setRequestProperty("User-Agent", "AI-Hub-Android/0.1")
+        }
+        try {
+            require(connection.responseCode in 200..299) { "GitHub 搜索失败：HTTP ${connection.responseCode}" }
+            val repositories = org.json.JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                .optJSONArray("items") ?: return emptyList()
+            val candidates = linkedSetOf<String>()
+            val rawPattern = Regex("""https://raw\\.githubusercontent\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[^\\s)\"<>]+""")
+            for (index in 0 until minOf(repositories.length(), 15)) {
+                val repo = repositories.getJSONObject(index)
+                val fullName = repo.optString("full_name")
+                val readmeUrl = URL("https://api.github.com/repos/$fullName/readme")
+                val readmeConnection = (readmeUrl.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 7000
+                    readTimeout = 10000
+                    setRequestProperty("Accept", "application/vnd.github+json")
+                    setRequestProperty("User-Agent", "AI-Hub-Android/0.1")
+                }
+                try {
+                    if (readmeConnection.responseCode !in 200..299) continue
+                    val readme = org.json.JSONObject(readmeConnection.inputStream.bufferedReader().use { it.readText() })
+                    val encoded = readme.optString("content")
+                    if (encoded.isBlank()) continue
+                    val markdown = String(Base64.decode(encoded, Base64.DEFAULT), Charsets.UTF_8)
+                    rawPattern.findAll(markdown).map { it.value.trimEnd('.', ',', ';') }
+                        .filter { url -> url.contains("sub", true) || url.contains("v2ray", true) || url.contains("clash", true) || url.contains("node", true) }
+                        .forEach { candidates.add(it) }
+                } finally { readmeConnection.disconnect() }
+                if (candidates.size >= 30) break
+            }
+            return candidates.toList()
+        } finally { connection.disconnect() }
+    }
+
     fun discover(source: String): List<ProxyNode> {
         val connection = (URL(source).openConnection() as HttpURLConnection).apply {
             connectTimeout = 10000
