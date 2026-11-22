@@ -91,7 +91,7 @@ class NodeActivity : AppCompatActivity() {
     }
 
     private fun scan(source: String) {
-        status.text = "正在扫描来源：$source"
+        status.text = "正在扫描订阅来源……"
         io.execute {
             val result = runCatching { discovery.discover(source) }
             runOnUiThread {
@@ -126,7 +126,7 @@ class NodeActivity : AppCompatActivity() {
         discovery.sources().forEach { source ->
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             row.addView(TextView(this).apply {
-                text = source; textSize = 12f
+                text = sourceLabel(source); textSize = 12f
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(Button(this).apply {
                 text = "移除"
@@ -153,12 +153,12 @@ class NodeActivity : AppCompatActivity() {
             null -> "尚未测试"
         }
         list.addView(TextView(this).apply {
-            text = "${node.name}\n${node.summary()}\n$result\n来源：${node.source}"
+            text = "${node.name}\n${node.summary()}\n$result\n来源：${sourceLabel(node.source)}"
             textSize = 14f; setPadding(12, 12, 12, 12)
         }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
 
-    override fun onDestroy() {
+    private fun sourceLabel(value: String): String = runCatching {\n        val uri = java.net.URI(value)\n        uri.host + (uri.path?.takeIf { it.isNotBlank() } ?: "")\n    }.getOrDefault("已保存的 HTTPS 来源")\n\n    override fun onDestroy() {
         io.shutdownNow()
         super.onDestroy()
     }
