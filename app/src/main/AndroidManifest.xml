@@ -1,18 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <application
-        android:allowBackup="false"
-        android:label="AI Hub"
-        android:usesCleartextTraffic="false"
-        android:theme="@style/AppTheme">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <application android:allowBackup="false" android:label="AI Hub"
+        android:usesCleartextTraffic="false" android:theme="@style/AppTheme">
+        <activity android:name=".BilibiliActivity" android:exported="false" />
+        <activity android:name=".NodeActivity" android:exported="false" />
         <activity android:name=".DiagnosticsActivity" android:exported="false" />
-        <activity
-            android:name=".WebActivity"
-            android:exported="false"
+        <activity android:name=".WebActivity" android:exported="false"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
