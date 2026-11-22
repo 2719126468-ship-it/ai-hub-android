@@ -44,7 +44,7 @@ class NodeDiscovery(context: Context) {
             val repositories = org.json.JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
                 .optJSONArray("items") ?: return emptyList()
             val candidates = linkedSetOf<String>()
-            val rawPattern = Regex("""https://raw\\.githubusercontent\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[^\\s)\"<>]+""")
+            val rawPattern = Regex("""https://raw\.githubusercontent\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[^\s)"<>]+""")
             for (index in 0 until minOf(repositories.length(), 15)) {
                 val repo = repositories.getJSONObject(index)
                 val fullName = repo.optString("full_name")
