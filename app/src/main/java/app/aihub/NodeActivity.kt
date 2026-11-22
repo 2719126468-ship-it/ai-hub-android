@@ -28,7 +28,7 @@ class NodeActivity : AppCompatActivity() {
             text = "添加你信任的 HTTPS 订阅地址。支持解析 VLESS、VMess、Trojan、Shadowsocks、Hysteria2 等分享链接。"
             textSize = 14f; setPadding(0, 8, 0, 12)
         })
-        sourceInput = EditText(this).apply { hint = "https://example.com/subscription"; singleLine = true }
+        sourceInput = EditText(this).apply { hint = "https://example.com/subscription"; maxLines = 1 }
         root.addView(sourceInput)
         root.addView(Button(this).apply { text = "保存并扫描订阅"; setOnClickListener { addAndScan() } })
         root.addView(Button(this).apply { text = "自动搜索公开订阅源"; setOnClickListener { searchPublicSources() } })
