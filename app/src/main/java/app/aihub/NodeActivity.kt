@@ -158,7 +158,11 @@ class NodeActivity : AppCompatActivity() {
         }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun sourceLabel(value: String): String = runCatching {\n        val uri = java.net.URI(value)\n        uri.host + (uri.path?.takeIf { it.isNotBlank() } ?: "")\n    }.getOrDefault("已保存的 HTTPS 来源")\n\n    override fun onDestroy() {
+    private fun sourceLabel(value: String): String = runCatching {
+        val uri = java.net.URI(value)
+        uri.host + (uri.path?.takeIf { it.isNotBlank() } ?: "")
+    }.getOrDefault("已保存的 HTTPS 来源")
+\n    override fun onDestroy() {
         io.shutdownNow()
         super.onDestroy()
     }
