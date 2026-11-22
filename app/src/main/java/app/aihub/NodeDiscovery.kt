@@ -45,13 +45,13 @@ class NodeDiscovery(context: Context) {
                 .optJSONArray("items") ?: return emptyList()
             val candidates = linkedSetOf<String>()
             val rawPattern = Regex("""https://raw\.githubusercontent\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[^\s)"<>]+""")
-            for (index in 0 until minOf(repositories.length(), 15)) {
+            for (index in 0 until minOf(repositories.length(), 8)) {
                 val repo = repositories.getJSONObject(index)
                 val fullName = repo.optString("full_name")
                 val readmeUrl = URL("https://api.github.com/repos/$fullName/readme")
                 val readmeConnection = (readmeUrl.openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 7000
-                    readTimeout = 10000
+                    connectTimeout = 5000
+                    readTimeout = 5000
                     setRequestProperty("Accept", "application/vnd.github+json")
                     setRequestProperty("User-Agent", "AI-Hub-Android/0.1")
                 }
