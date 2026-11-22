@@ -1,6 +1,7 @@
 package app.aihub
 
 import android.os.Bundle
+import androidx.appcompat.app.AlertDialog
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -30,6 +31,7 @@ class NodeActivity : AppCompatActivity() {
         sourceInput = EditText(this).apply { hint = "https://example.com/subscription"; singleLine = true }
         root.addView(sourceInput)
         root.addView(Button(this).apply { text = "保存并扫描订阅"; setOnClickListener { addAndScan() } })
+        root.addView(Button(this).apply { text = "自动搜索公开订阅源"; setOnClickListener { searchPublicSources() } })
         root.addView(Button(this).apply { text = "重新扫描全部来源"; setOnClickListener { scanAll() } })
         root.addView(Button(this).apply { text = "测试节点服务器端口"; setOnClickListener { probe() } })
         status = TextView(this).apply { text = "来源与节点尚未扫描。" }
@@ -50,6 +52,34 @@ class NodeActivity : AppCompatActivity() {
         sourceInput.text.clear()
         renderSources()
         scan(source)
+    }
+
+    private fun searchPublicSources() {
+        status.text = "正在 GitHub 搜索公开订阅源……"
+        io.execute {
+            val result = runCatching { discovery.searchPublicSources() }
+            runOnUiThread {
+                result.onSuccess { candidates ->
+                    if (candidates.isEmpty()) {
+                        status.text = "没有找到可识别的公开订阅链接。可以手动添加可信来源。"
+                    } else {
+                        AlertDialog.Builder(this)
+                            .setTitle("发现 ${candidates.size} 个候选来源")
+                            .setMessage("公开来源未经安全审计，可能失效或包含不可信节点。只添加你愿意承担风险的来源。")
+                            .setItems(candidates.toTypedArray()) { _, which ->
+                                val selected = candidates[which]
+                                if (discovery.addSource(selected)) {
+                                    renderSources()
+                                    scan(selected)
+                                } else status.text = "来源地址无效。"
+                            }
+                            .setNegativeButton("取消", null)
+                            .show()
+                        status.text = "搜索完成。选择来源后才会下载订阅内容。"
+                    }
+                }.onFailure { status.text = "公开源搜索失败：${it.message}" }
+            }
+        }
     }
 
     private fun scanAll() {
