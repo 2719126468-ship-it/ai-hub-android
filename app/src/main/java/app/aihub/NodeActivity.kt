@@ -162,7 +162,9 @@ class NodeActivity : AppCompatActivity() {
         val uri = java.net.URI(value)
         uri.host + (uri.path?.takeIf { it.isNotBlank() } ?: "")
     }.getOrDefault("已保存的 HTTPS 来源")
-\n    override fun onDestroy() {
+
+
+    override fun onDestroy() {
         io.shutdownNow()
         super.onDestroy()
     }
