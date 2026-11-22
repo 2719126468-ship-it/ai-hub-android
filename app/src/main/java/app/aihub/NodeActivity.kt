@@ -33,7 +33,8 @@ class NodeActivity : AppCompatActivity() {
         root.addView(Button(this).apply { text = "保存并扫描订阅"; setOnClickListener { addAndScan() } })
         root.addView(Button(this).apply { text = "自动搜索公开订阅源"; setOnClickListener { searchPublicSources() } })
         root.addView(Button(this).apply { text = "重新扫描全部来源"; setOnClickListener { scanAll() } })
-        root.addView(Button(this).apply { text = "测试节点服务器端口"; setOnClickListener { probe() } })
+        root.addView(Button(this).apply { text = "测试节点服务器端口（TCP）"; setOnClickListener { probe() } })
+        root.addView(Button(this).apply { text = "生成并校验 sing-box 配置"; setOnClickListener { validateConfigs() } })
         status = TextView(this).apply { text = "来源与节点尚未扫描。" }
         root.addView(status)
         root.addView(TextView(this).apply { text = "订阅来源"; textSize = 18f; setPadding(0, 16, 0, 8) })
@@ -117,6 +118,32 @@ class NodeActivity : AppCompatActivity() {
                     .thenBy { it.endpointLatencyMs ?: Long.MAX_VALUE }))
                 status.text = "端口探测完成：${nodes.count { it.endpointReachable == true }}/${nodes.size} 个端口可连接。"
                 renderNodes()
+            }
+        }
+    }
+
+    private fun validateConfigs() {
+        if (nodes.isEmpty()) { status.text = "没有节点，请先扫描订阅。"; return }
+        status.text = "正在生成配置并调用 sing-box 原生校验……"
+        io.execute {
+            var passed = 0
+            val failures = mutableListOf<String>()
+            nodes.forEach { node ->
+                runCatching {
+                    val config = SingBoxConfigBuilder.build(node)
+                    SingBoxRuntime.validateConfig(config.json)
+                }.onSuccess { passed++ }
+                    .onFailure { failures.add("${node.name}: ${it.message ?: "配置无效"}") }
+            }
+            runOnUiThread {
+                status.text = "原生配置校验：$passed/${nodes.size} 通过。此结果只代表配置可被 sing-box 接受，不代表节点握手或 HTTPS 出口可用。"
+                if (failures.isNotEmpty()) {
+                    AlertDialog.Builder(this)
+                        .setTitle("配置校验失败（${failures.size}）")
+                        .setMessage(failures.take(12).joinToString("\\n"))
+                        .setPositiveButton("知道了", null)
+                        .show()
+                }
             }
         }
     }
