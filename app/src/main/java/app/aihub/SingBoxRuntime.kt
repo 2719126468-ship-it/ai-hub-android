@@ -28,8 +28,8 @@ object SingBoxRuntime {
             workingPath = working.absolutePath
             tempPath = temp.absolutePath
             logMaxLines = 1000
-            appVersion = BuildConfig.VERSION_CODE.toString()
-            appMarketingVersion = BuildConfig.VERSION_NAME
+            appVersion = "1"
+            appMarketingVersion = "0.1.0"
         }
         Libbox.setup(options)
         initialized = true
